@@ -142,7 +142,9 @@ const WELCOME_BLOCKS: BlockEntry[] = [
 const Index = () => {
   const [blocks, setBlocks] = useState<BlockEntry[]>(WELCOME_BLOCKS);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [pythonMode, setPythonMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { load: loadPyodide, loading: pyodideLoading, ready: pyodideReady, runPython } = usePyodide();
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
@@ -154,11 +156,109 @@ const Index = () => {
     scrollToBottom();
   }, [blocks, scrollToBottom]);
 
+  const handlePythonCommand = async (code: string) => {
+    // Exit REPL
+    if (code === "exit()" || code === "quit()") {
+      setBlocks((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          kind: "lines",
+          lines: [
+            { id: 1, content: code, type: "command" },
+            { id: 2, content: "Exiting Python REPL.", type: "info" },
+          ],
+        },
+      ]);
+      setPythonMode(false);
+      return;
+    }
+
+    setIsProcessing(true);
+
+    // Show the command
+    setBlocks((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        kind: "lines",
+        lines: [{ id: 1, content: `>>> ${code}`, type: "command" }],
+      },
+    ]);
+
+    const { output, error } = await runPython(code);
+
+    if (output || error) {
+      setBlocks((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          kind: "lines",
+          lines: (output ? output.split("\n").filter(Boolean) : [])
+            .map((line, i) => ({ id: i + 1, content: line, type: "output" as const }))
+            .concat(
+              error ? [{ id: 999, content: error, type: "error" as const }] : []
+            ),
+        },
+      ]);
+    }
+
+    setIsProcessing(false);
+  };
+
   const handleCommand = async (cmd: string) => {
+    if (pythonMode) {
+      await handlePythonCommand(cmd);
+      return;
+    }
+
     const lowerCmd = cmd.toLowerCase().trim();
 
     if (lowerCmd === "clear") {
       setBlocks([]);
+      return;
+    }
+
+    if (lowerCmd === "python") {
+      setIsProcessing(true);
+      setBlocks((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          kind: "lines",
+          lines: [
+            { id: 1, content: "python", type: "command" },
+            { id: 2, content: "Loading Python (Pyodide/WebAssembly)...", type: "info" },
+          ],
+        },
+      ]);
+
+      try {
+        await loadPyodide();
+        setBlocks((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            kind: "lines",
+            lines: [
+              { id: 1, content: "Python 3.11.3 (Pyodide) — WebAssembly Runtime", type: "success" },
+              { id: 2, content: "Type exit() to return to NEXTERM.", type: "info" },
+            ],
+          },
+        ]);
+        setPythonMode(true);
+      } catch {
+        setBlocks((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            kind: "lines",
+            lines: [{ id: 1, content: "Failed to load Pyodide.", type: "error" }],
+          },
+        ]);
+      }
+
+      setIsProcessing(false);
       return;
     }
 
@@ -167,7 +267,6 @@ const Index = () => {
     const handler = COMMANDS[lowerCmd];
     if (handler) {
       const newBlocks = handler();
-      // Simulate streaming with stagger
       for (let i = 0; i < newBlocks.length; i++) {
         await new Promise((r) => setTimeout(r, i === 0 ? 0 : 400));
         setBlocks((prev) => [...prev, newBlocks[i]]);

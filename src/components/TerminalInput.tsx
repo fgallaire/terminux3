@@ -4,9 +4,10 @@ import { motion } from "framer-motion";
 interface TerminalInputProps {
   onSubmit: (command: string) => void;
   disabled?: boolean;
+  prompt?: string;
 }
 
-const TerminalInput = ({ onSubmit, disabled }: TerminalInputProps) => {
+const TerminalInput = ({ onSubmit, disabled, prompt = "❯" }: TerminalInputProps) => {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -24,7 +25,7 @@ const TerminalInput = ({ onSubmit, disabled }: TerminalInputProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="flex items-center gap-2 px-4 py-3">
-      <span className="text-muted-foreground select-none">❯</span>
+      <span className="text-muted-foreground select-none">{prompt}</span>
       <input
         ref={inputRef}
         value={value}

@@ -347,7 +347,7 @@ const Index = () => {
 
         {/* Input */}
         <div className="border-t border-border/10 shrink-0">
-          <TerminalInput onSubmit={handleCommand} disabled={isProcessing} />
+          <TerminalInput onSubmit={handleCommand} disabled={isProcessing} prompt={pythonMode ? ">>>" : "❯"} />
         </div>
       </main>
     </div>

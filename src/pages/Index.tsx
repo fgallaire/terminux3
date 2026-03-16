@@ -195,9 +195,9 @@ const Index = () => {
           id: Date.now() + 1,
           kind: "lines",
           lines: (output ? output.split("\n").filter(Boolean) : [])
-            .map((line, i) => ({ id: i + 1, content: line, type: "output" as const }))
+            .map((line, i): LineEntry => ({ id: i + 1, content: line, type: "output" }))
             .concat(
-              error ? [{ id: 999, content: error, type: "error" as const }] : []
+              error ? [{ id: 999, content: error, type: "error" } as LineEntry] : []
             ),
         },
       ]);

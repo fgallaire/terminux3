@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 interface TerminalInputProps {
   onSubmit: (command: string) => void;
   disabled?: boolean;
+  prompt?: string;
 }
 
 const TerminalInput = ({ onSubmit, disabled }: TerminalInputProps) => {

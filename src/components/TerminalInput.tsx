@@ -25,7 +25,7 @@ const TerminalInput = ({ onSubmit, disabled, prompt = "❯" }: TerminalInputProp
 
   return (
     <form onSubmit={handleSubmit} className="flex items-center gap-2 px-4 py-3">
-      <span className="text-muted-foreground select-none">❯</span>
+      <span className="text-muted-foreground select-none">{prompt}</span>
       <input
         ref={inputRef}
         value={value}

@@ -5,6 +5,7 @@ import TerminalInput from "@/components/TerminalInput";
 import TerminalLine from "@/components/TerminalLine";
 import DataCard from "@/components/DataCard";
 import ProgressBar from "@/components/ProgressBar";
+import { usePyodide } from "@/hooks/usePyodide";
 
 type LineEntry = {
   id: number;

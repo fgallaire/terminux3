@@ -7,7 +7,7 @@ interface TerminalInputProps {
   prompt?: string;
 }
 
-const TerminalInput = ({ onSubmit, disabled }: TerminalInputProps) => {
+const TerminalInput = ({ onSubmit, disabled, prompt = "❯" }: TerminalInputProps) => {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 

@@ -22,7 +22,7 @@ export function usePyodide() {
     if (!window.loadPyodide) {
       await new Promise<void>((resolve, reject) => {
         const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js";
+        script.src = "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.js";
         script.onload = () => resolve();
         script.onerror = () => reject(new Error("Failed to load Pyodide"));
         document.head.appendChild(script);
@@ -30,7 +30,7 @@ export function usePyodide() {
     }
 
     pyodideRef.current = await window.loadPyodide({
-      indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
+      indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/",
     });
 
     // Redirect stdout/stderr

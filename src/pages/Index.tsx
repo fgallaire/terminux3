@@ -242,7 +242,7 @@ const Index = () => {
             id: Date.now() + 1,
             kind: "lines",
             lines: [
-              { id: 1, content: "Python 3.11.3 (Pyodide) — WebAssembly Runtime", type: "success" },
+              { id: 1, content: "Python 3.12.7 (Pyodide) — WebAssembly Runtime", type: "success" },
               { id: 2, content: "Type exit() to return to NEXTERM.", type: "info" },
             ],
           },

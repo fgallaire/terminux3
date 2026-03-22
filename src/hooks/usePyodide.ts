@@ -30,7 +30,7 @@ export function usePyodide() {
     }
 
     pyodideRef.current = await window.loadPyodide({
-      indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.1/full/",
+      indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.0/full/",
     });
 
     // Redirect stdout/stderr

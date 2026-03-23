@@ -148,8 +148,11 @@ const Index = () => {
   const [blocks, setBlocks] = useState<BlockEntry[]>(WELCOME_BLOCKS);
   const [isProcessing, setIsProcessing] = useState(false);
   const [pythonMode, setPythonMode] = useState(false);
+  const [vmMode, setVmMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const xtermRef = useRef<Terminal | null>(null);
   const { load: loadPyodide, loading: pyodideLoading, ready: pyodideReady, runPython } = usePyodide();
+  const { boot: bootVM, booting: vmBooting, running: vmRunning, sendChar, sendString, stop: stopVM } = useV86();
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {

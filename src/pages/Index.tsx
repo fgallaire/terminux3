@@ -6,6 +6,9 @@ import TerminalLine from "@/components/TerminalLine";
 import DataCard from "@/components/DataCard";
 import ProgressBar from "@/components/ProgressBar";
 import { usePyodide } from "@/hooks/usePyodide";
+import { useV86 } from "@/hooks/useV86";
+import V86Terminal from "@/components/V86Terminal";
+import type { Terminal } from "@xterm/xterm";
 
 type LineEntry = {
   id: number;

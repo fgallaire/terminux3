@@ -6,6 +6,9 @@ import TerminalLine from "@/components/TerminalLine";
 import DataCard from "@/components/DataCard";
 import ProgressBar from "@/components/ProgressBar";
 import { usePyodide } from "@/hooks/usePyodide";
+import { useV86 } from "@/hooks/useV86";
+import V86Terminal from "@/components/V86Terminal";
+import type { Terminal } from "@xterm/xterm";
 
 type LineEntry = {
   id: number;
@@ -34,8 +37,9 @@ const COMMANDS: Record<string, () => BlockEntry[]> = {
         { id: 5, content: "  scan       — run network scan", type: "output" },
         { id: 6, content: "  about      — about this terminal", type: "output" },
         { id: 7, content: "  python    — interactive Python REPL", type: "output" },
-        { id: 8, content: "  clear      — clear terminal", type: "output" },
-        { id: 9, content: "  neofetch   — system info", type: "output" },
+        { id: 8, content: "  linux      — boot Linux VM (v86)", type: "output" },
+        { id: 9, content: "  clear      — clear terminal", type: "output" },
+        { id: 10, content: "  neofetch   — system info", type: "output" },
       ],
     },
   ],
@@ -144,8 +148,11 @@ const Index = () => {
   const [blocks, setBlocks] = useState<BlockEntry[]>(WELCOME_BLOCKS);
   const [isProcessing, setIsProcessing] = useState(false);
   const [pythonMode, setPythonMode] = useState(false);
+  const [vmMode, setVmMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const xtermRef = useRef<Terminal | null>(null);
   const { load: loadPyodide, loading: pyodideLoading, ready: pyodideReady, runPython } = usePyodide();
+  const { boot: bootVM, booting: vmBooting, running: vmRunning, sendChar, sendString, stop: stopVM } = useV86();
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
@@ -263,6 +270,41 @@ const Index = () => {
       return;
     }
 
+    if (lowerCmd === "linux") {
+      setBlocks((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          kind: "lines",
+          lines: [
+            { id: 1, content: "linux", type: "command" },
+            { id: 2, content: "Booting Linux VM (v86 x86 emulator)...", type: "info" },
+            { id: 3, content: "Loading BIOS, kernel and rootfs. This may take a moment.", type: "info" },
+          ],
+        },
+      ]);
+
+      try {
+        setVmMode(true);
+        await bootVM((char: string) => {
+          if (xtermRef.current) {
+            xtermRef.current.write(char);
+          }
+        });
+      } catch {
+        setVmMode(false);
+        setBlocks((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            kind: "lines",
+            lines: [{ id: 1, content: "Failed to load v86 emulator.", type: "error" }],
+          },
+        ]);
+      }
+      return;
+    }
+
     setIsProcessing(true);
 
     const handler = COMMANDS[lowerCmd];
@@ -298,57 +340,109 @@ const Index = () => {
         {/* Header */}
         <header className="px-4 py-3 border-b border-border/10 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <span className="terminal-heading text-muted-foreground">session://local</span>
+            <span className="terminal-heading text-muted-foreground">
+              {vmMode ? "vm://linux-x86" : "session://local"}
+            </span>
             <span className="text-xs text-muted-foreground/50">•</span>
-            <span className="text-xs text-muted-foreground/50 tabular-nums">pid:4827</span>
+            <span className="text-xs text-muted-foreground/50 tabular-nums">
+              {vmMode ? "v86" : "pid:4827"}
+            </span>
           </div>
           <div className="flex items-center gap-2">
+            {vmMode && (
+              <button
+                onClick={() => {
+                  stopVM();
+                  setVmMode(false);
+                  setBlocks((prev) => [
+                    ...prev,
+                    {
+                      id: Date.now(),
+                      kind: "lines",
+                      lines: [
+                        { id: 1, content: "VM stopped.", type: "info" },
+                      ],
+                    },
+                  ]);
+                }}
+                className="text-xs text-destructive hover:text-destructive/80 mr-2 font-mono"
+              >
+                [EXIT VM]
+              </button>
+            )}
             <div className="w-2 h-2 rounded-full bg-destructive/60" />
             <div className="w-2 h-2 rounded-full bg-accent/40" />
             <div className="w-2 h-2 rounded-full bg-primary/60" />
           </div>
         </header>
 
-        {/* Terminal output */}
-        <div
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto p-4 space-y-4"
-          style={{ scrollBehavior: "auto" }}
-        >
-          <AnimatePresence mode="popLayout">
-            {blocks.map((block) => (
-              <motion.div
-                key={block.id}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, ease: [0.19, 1, 0.22, 1] }}
-              >
-                {block.kind === "lines" &&
-                  block.lines?.map((line, i) => (
-                    <TerminalLine
-                      key={`${block.id}-${line.id}`}
-                      content={line.content}
-                      type={line.type}
-                      index={i}
-                    />
-                  ))}
-                {block.kind === "card" && block.card && (
-                  <DataCard title={block.card.title} accent={block.card.accent}>
-                    <pre className="whitespace-pre font-mono text-sm">{block.card.content}</pre>
-                  </DataCard>
-                )}
-                {block.kind === "progress" && (
-                  <ProgressBar progress={block.progress ?? 0} />
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+        {vmMode ? (
+          <div className="flex-1 min-h-0">
+            <V86Terminal
+              onReady={(term) => {
+                xtermRef.current = term;
+              }}
+              onData={(data) => {
+                sendString(data);
+              }}
+              onExit={() => {
+                stopVM();
+                setVmMode(false);
+                setBlocks((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now(),
+                    kind: "lines",
+                    lines: [{ id: 1, content: "VM stopped.", type: "info" }],
+                  },
+                ]);
+              }}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Terminal output */}
+            <div
+              ref={scrollRef}
+              className="flex-1 overflow-y-auto p-4 space-y-4"
+              style={{ scrollBehavior: "auto" }}
+            >
+              <AnimatePresence mode="popLayout">
+                {blocks.map((block) => (
+                  <motion.div
+                    key={block.id}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, ease: [0.19, 1, 0.22, 1] }}
+                  >
+                    {block.kind === "lines" &&
+                      block.lines?.map((line, i) => (
+                        <TerminalLine
+                          key={`${block.id}-${line.id}`}
+                          content={line.content}
+                          type={line.type}
+                          index={i}
+                        />
+                      ))}
+                    {block.kind === "card" && block.card && (
+                      <DataCard title={block.card.title} accent={block.card.accent}>
+                        <pre className="whitespace-pre font-mono text-sm">{block.card.content}</pre>
+                      </DataCard>
+                    )}
+                    {block.kind === "progress" && (
+                      <ProgressBar progress={block.progress ?? 0} />
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
 
-        {/* Input */}
-        <div className="border-t border-border/10 shrink-0">
-          <TerminalInput onSubmit={handleCommand} disabled={isProcessing} prompt={pythonMode ? ">>>" : "❯"} />
-        </div>
+            {/* Input */}
+            <div className="border-t border-border/10 shrink-0">
+              <TerminalInput onSubmit={handleCommand} disabled={isProcessing} prompt={pythonMode ? ">>>" : "❯"} />
+            </div>
+          </>
+        )}
       </main>
     </div>
   );

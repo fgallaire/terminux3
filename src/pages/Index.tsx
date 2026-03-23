@@ -270,6 +270,41 @@ const Index = () => {
       return;
     }
 
+    if (lowerCmd === "linux") {
+      setBlocks((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          kind: "lines",
+          lines: [
+            { id: 1, content: "linux", type: "command" },
+            { id: 2, content: "Booting Linux VM (v86 x86 emulator)...", type: "info" },
+            { id: 3, content: "Loading BIOS, kernel and rootfs. This may take a moment.", type: "info" },
+          ],
+        },
+      ]);
+
+      try {
+        setVmMode(true);
+        await bootVM((char: string) => {
+          if (xtermRef.current) {
+            xtermRef.current.write(char);
+          }
+        });
+      } catch {
+        setVmMode(false);
+        setBlocks((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            kind: "lines",
+            lines: [{ id: 1, content: "Failed to load v86 emulator.", type: "error" }],
+          },
+        ]);
+      }
+      return;
+    }
+
     setIsProcessing(true);
 
     const handler = COMMANDS[lowerCmd];

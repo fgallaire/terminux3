@@ -23,7 +23,7 @@ export function useV86() {
     if (!window.V86) {
       await new Promise<void>((resolve, reject) => {
         const script = document.createElement("script");
-        script.src = "https://copy.sh/v86/build/libv86.js";
+        script.src = "/v86/libv86.js";
         script.onload = () => resolve();
         script.onerror = () => reject(new Error("Failed to load v86"));
         document.head.appendChild(script);
@@ -31,7 +31,7 @@ export function useV86() {
     }
 
     const emulator = new window.V86({
-      wasm_path: "https://copy.sh/v86/build/v86.wasm",
+      wasm_path: "/v86/v86.wasm",
       memory_size: 64 * 1024 * 1024,
       vga_memory_size: 2 * 1024 * 1024,
       bios: { url: "https://copy.sh/v86/bios/seabios.bin" },

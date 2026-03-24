@@ -343,7 +343,7 @@ const Index = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background dot-grid">
-      <Sidebar />
+      <Sidebar activeTab={activeTab} onTabClick={handleTabClick} vmRunning={vmMode} />
 
       {/* Main terminal area */}
       <main className="flex-1 flex flex-col min-w-0">

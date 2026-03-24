@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Sidebar from "@/components/Sidebar";
+import Sidebar, { VM_COMMANDS } from "@/components/Sidebar";
 import TerminalInput from "@/components/TerminalInput";
 import TerminalLine from "@/components/TerminalLine";
 import DataCard from "@/components/DataCard";
@@ -149,10 +149,20 @@ const Index = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [pythonMode, setPythonMode] = useState(false);
   const [vmMode, setVmMode] = useState(false);
+  const [activeTab, setActiveTab] = useState("terminal");
   const scrollRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const { load: loadPyodide, loading: pyodideLoading, ready: pyodideReady, runPython } = usePyodide();
   const { boot: bootVM, booting: vmBooting, running: vmRunning, sendChar, sendString, stop: stopVM } = useV86();
+
+  const handleTabClick = useCallback((id: string) => {
+    setActiveTab(id);
+    if (id === "terminal" || id === "about") return;
+    // If VM is running, send the command to the VM
+    if (vmMode && VM_COMMANDS[id]) {
+      sendString(VM_COMMANDS[id]);
+    }
+  }, [vmMode, sendString]);
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) {
@@ -333,7 +343,7 @@ const Index = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background dot-grid">
-      <Sidebar />
+      <Sidebar activeTab={activeTab} onTabClick={handleTabClick} vmRunning={vmMode} />
 
       {/* Main terminal area */}
       <main className="flex-1 flex flex-col min-w-0">

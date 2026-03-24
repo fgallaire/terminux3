@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Sidebar from "@/components/Sidebar";
+import Sidebar, { VM_COMMANDS } from "@/components/Sidebar";
 import TerminalInput from "@/components/TerminalInput";
 import TerminalLine from "@/components/TerminalLine";
 import DataCard from "@/components/DataCard";
